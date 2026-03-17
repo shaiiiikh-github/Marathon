@@ -16,8 +16,10 @@ export async function POST(req: Request) {
             return new NextResponse("Missing required fields", { status: 400 });
         }
 
-        // 1. Send the data to your Flask ML Backend
+        // 1. Define the API URL exactly ONCE
         const apiUrl = process.env.NEXT_PUBLIC_API_URL || "https://shaiiiikh1305-backend.hf.space";
+        
+        // 2. Send the code and vulnerabilities to the ML Backend
         const flaskResponse = await fetch(`${apiUrl}/fix`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -31,7 +33,7 @@ export async function POST(req: Request) {
         const mlData = await flaskResponse.json();
         const fixedCode = mlData.fixed_code;
 
-        // 2. Save the fixed code back to the Prisma database
+        // 3. Save the fixed code back to the Prisma database
         if (fixedCode) {
             await prisma.scanResult.update({
                 where: { id: scanId },

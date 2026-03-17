@@ -47,7 +47,7 @@ export default function AppLayout({
   }, []);
 
   return (
-    <div className="flex min-h-screen bg-background text-foreground selection:bg-primary/30 relative overflow-hidden">
+    <div className="flex min-h-screen bg-background text-foreground selection:bg-primary/30 relative overflow-x-hidden">
       {/* Global 3D Decorations */}
       <div className="fixed inset-0 pointer-events-none z-0">
 
@@ -100,7 +100,7 @@ export default function AppLayout({
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, ease: 'easeOut' }}
-              className="w-full h-full"
+              className="w-full min-h-full"
             >
               {children}
             </motion.div>
