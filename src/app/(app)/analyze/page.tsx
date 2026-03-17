@@ -49,6 +49,7 @@ export default function AnalyzePage() {
     const [showFix, setShowFix] = useState(false);
     const [isFixing, setIsFixing] = useState(false);
     const [fixedCode, setFixedCode] = useState("");
+    const [currentScanId, setCurrentScanId] = useState<string | null>(null);
 
     const textAreaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -59,7 +60,6 @@ export default function AnalyzePage() {
         setScanResults([]);
 
         try {
-            // Hitting your Next.js backend so it saves to Prisma!
             const res = await fetch(`/api/scan`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -67,8 +67,12 @@ export default function AnalyzePage() {
             });
             const data = await res.json();
 
+            // 👇 Capture the database ID!
+            if (data.id) {
+                setCurrentScanId(data.id);
+            }
+
             if (data.vulnerabilities) {
-                // Map the Prisma database format back to what your UI expects
                 const formattedResults = data.vulnerabilities.map((v: any) => ({
                     line_number: v.lineNumber,
                     code: v.codeSnippet,
@@ -87,17 +91,23 @@ export default function AnalyzePage() {
     };
 
     // --- PHASE 2: FIX API CALL ---
-    const handleGenerateFix = async () => {
+ const handleGenerateFix = async () => {
+        if (!currentScanId) return; // Prevent fixing if no scan exists
+        
         setShowFix(true);
         setIsFixing(true);
         setFixedCode("");
 
         try {
-            const apiUrl = process.env.NEXT_PUBLIC_API_URL || "https://shaiiiikh1305-backend.hf.space";
-            const res = await fetch(`${apiUrl}/fix`, {
+            // 👇 Pointing to your local API and passing the scanId
+            const res = await fetch(`/api/fix`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ code, scan_results: scanResults })
+                body: JSON.stringify({ 
+                    code, 
+                    scan_results: scanResults,
+                    scanId: currentScanId 
+                })
             });
             const data = await res.json();
 
@@ -108,7 +118,7 @@ export default function AnalyzePage() {
             }
         } catch (error) {
             console.error("Fix failed:", error);
-            setFixedCode("Error connecting to the cloud AI model.");
+            setFixedCode("Error connecting to the local backend.");
         } finally {
             setIsFixing(false);
         }
