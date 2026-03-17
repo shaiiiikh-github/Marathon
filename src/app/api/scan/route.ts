@@ -2,6 +2,18 @@ import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 
+interface MlScanResult {
+    line_number: number;
+    code: string;
+    label: number;
+    label_name: string;
+    confidence: number;
+}
+
+interface MlScanResponse {
+    scan_results: MlScanResult[];
+}
+
 export async function POST(req: Request) {
     try {
         const session = await auth();
@@ -28,12 +40,12 @@ export async function POST(req: Request) {
             throw new Error("Failed to communicate with ML Backend");
         }
 
-        const mlData = await flaskResponse.json();
+        const mlData: MlScanResponse = await flaskResponse.json();
         const scanResults = mlData.scan_results;
 
         // 2. Determine if the overall snippet has vulnerabilities
         const hasVulnerabilities = scanResults.some(
-            (res: any) => res.label === 0 || res.label === 2
+            (res) => res.label === 0 || res.label === 2
         );
 
         // 3. Save the scan and line-level issues to Prisma
@@ -43,7 +55,7 @@ export async function POST(req: Request) {
                 originalCode: code,
                 isVulnerable: hasVulnerabilities,
                 vulnerabilities: {
-                    create: scanResults.map((res: any) => ({
+                    create: scanResults.map((res) => ({
                         lineNumber: res.line_number,
                         codeSnippet: res.code,
                         label: res.label,

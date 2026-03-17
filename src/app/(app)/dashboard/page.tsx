@@ -3,8 +3,8 @@
 
 import { useState, useEffect } from 'react';
 import { 
-    ShieldCheck, AlertTriangle, Bug, Code2, 
-    Terminal, Download, Activity, Zap, Server, ChevronRight 
+    ShieldCheck, AlertTriangle, Code2, 
+    Terminal, Download, Activity, Zap, ChevronRight 
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
@@ -58,7 +58,7 @@ export default function Dashboard() {
 
             const contentDisposition = res.headers.get('Content-Disposition');
             const fileNameMatch = contentDisposition?.match(/filename=([^;]+)/i);
-            const fileName = fileNameMatch?.[1]?.replace(/"/g, '') || `codetrust-forensic-report-${Date.now()}.csv`;
+            const fileName = fileNameMatch?.[1]?.replace(/"/g, '') || `codetrust-forensic-report-${Date.now()}.pdf`;
 
             a.download = fileName;
             document.body.appendChild(a);
@@ -126,7 +126,7 @@ export default function Dashboard() {
                         </span>
                         System Online
                     </div>
-                    <h1 className="text-3xl md:text-5xl font-black italic tracking-tight">
+                    <h1 className="text-3xl md:text-5xl font-black italic tracking-tight leading-[1.15] pb-1">
                         Neural <span className="gradient-text">Command</span>
                     </h1>
                     <p className="text-secondary text-sm md:text-base font-medium max-w-xl">

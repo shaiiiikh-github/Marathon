@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, Suspense } from 'react';
-import { User, Bell, Shield, Key, Globe, LogOut, Check, Save, Zap, Activity, Cpu, Database, Network as NetworkIcon, Sparkles } from 'lucide-react';
+import { User, Bell, Shield, Key, Globe, LogOut, Check, Save, Zap, Activity, Network as NetworkIcon, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
@@ -36,7 +36,14 @@ function SettingsContent() {
     const [saved, setSaved] = useState(false);
 
     // --- API KEYS STATE (Moved inside the component!) ---
-    const [apiKeys, setApiKeys] = useState<any[]>([]);
+    interface ApiKeyItem {
+        id: string;
+        name: string;
+        key: string;
+        createdAt: string;
+    }
+
+    const [apiKeys, setApiKeys] = useState<ApiKeyItem[]>([]);
     const [isCreatingKey, setIsCreatingKey] = useState(false);
 
     // 1. Pull in the session and the update function
@@ -321,7 +328,7 @@ function SettingsContent() {
                                                 No interface keys generated yet. Create one to authenticate external neural scans.
                                             </div>
                                         ) : (
-                                            apiKeys.map((key, i) => (
+                                            apiKeys.map((key) => (
                                                 <div key={key.id} className="p-6 glass rounded-2xl border border-card-border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 hover:border-primary/20 transition-all group">
                                                     <div className="space-y-1">
                                                         <p className="font-black italic text-sm">{key.name}</p>

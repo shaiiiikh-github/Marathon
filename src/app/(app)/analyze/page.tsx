@@ -1,8 +1,9 @@
 'use client';
 
 import { useState, useRef } from 'react';
-import { Play, Upload, FileCode, AlertCircle, Sparkles, CheckCircle2, RotateCcw, ChevronDown } from 'lucide-react';
+import { Play, FileCode, AlertCircle, Sparkles, CheckCircle2, RotateCcw, ChevronDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import Link from 'next/link';
 
 // --- TYPES FOR YOUR FLASK API ---
 interface ScanResult {
@@ -10,6 +11,14 @@ interface ScanResult {
     code: string;
     label: number;
     label_name: string;
+    confidence: number;
+}
+
+interface ApiVulnerability {
+    lineNumber: number;
+    codeSnippet: string;
+    label: number;
+    labelName: string;
     confidence: number;
 }
 
@@ -73,7 +82,7 @@ export default function AnalyzePage() {
             }
 
             if (data.vulnerabilities) {
-                const formattedResults = data.vulnerabilities.map((v: any) => ({
+                const formattedResults = (data.vulnerabilities as ApiVulnerability[]).map((v) => ({
                     line_number: v.lineNumber,
                     code: v.codeSnippet,
                     label: v.label,
@@ -259,7 +268,7 @@ export default function AnalyzePage() {
                                             <span className={`text-[10px] font-black tracking-widest uppercase mb-1 ${issue.label === 0 ? 'text-red-500' : 'text-yellow-500'}`}>
                                                 {issue.label_name} (Line {issue.line_number})
                                             </span>
-                                            <div className="mt-2 p-3 rounded-xl bg-black/20 border border-white/5 font-mono text-xs text-secondary overflow-hidden text-ellipsis whitespace-nowrap">
+                                            <div className="mt-2 p-3 rounded-xl bg-black/20 border border-white/5 font-mono text-xs text-secondary whitespace-pre-wrap wrap-break-word">
                                                 {issue.code}
                                             </div>
                                         </motion.div>
@@ -268,6 +277,14 @@ export default function AnalyzePage() {
                                     <button onClick={handleGenerateFix} className="w-full py-4 bg-foreground text-background rounded-xl font-bold hover:bg-gray-200 transition-all shadow-xl flex items-center justify-center gap-3">
                                         <Sparkles className="w-5 h-5" /> Generate Secure Fix
                                     </button>
+                                    {currentScanId && (
+                                        <Link
+                                            href={`/reports?scanId=${currentScanId}`}
+                                            className="w-full inline-flex py-3 border border-card-border rounded-xl text-xs font-black uppercase tracking-widest justify-center hover:border-primary/30 hover:bg-card/30 transition-all"
+                                        >
+                                            Open Full Report
+                                        </Link>
+                                    )}
                                 </>
                             ) : (
                                 <div className="p-8 text-center glass rounded-2xl border border-safe/30">
