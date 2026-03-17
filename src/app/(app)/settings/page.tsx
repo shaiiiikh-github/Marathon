@@ -122,7 +122,7 @@ function SettingsContent() {
                 <button
                     onClick={handleSave}
                     disabled={saving}
-                    className="px-8 py-3 bg-foreground text-background rounded-2xl text-xs font-black uppercase tracking-widest flex items-center gap-2 hover:bg-white transition-all active:scale-95 shadow-xl disabled:opacity-50"
+                    className="w-full md:w-auto px-6 md:px-8 py-3 bg-foreground text-background rounded-2xl text-xs font-black uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-white transition-all active:scale-95 shadow-xl disabled:opacity-50"
                 >
                     {saving ? (
                         <div className="w-4 h-4 border-2 border-background/30 border-t-background rounded-full animate-spin"></div>
@@ -138,11 +138,28 @@ function SettingsContent() {
             <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 relative z-10">
                 {/* Tabs Sidebar */}
                 <div className="lg:col-span-1 space-y-2">
+                    <div className="lg:hidden -mx-1 px-1 overflow-x-auto pb-2">
+                        <div className="flex gap-2 min-w-max">
+                            {tabs.map((tab) => (
+                                <button
+                                    key={`mobile-${tab.id}`}
+                                    onClick={() => setActiveTab(tab.id)}
+                                    className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${activeTab === tab.id
+                                        ? 'glass bg-primary/10 border border-primary/30 text-primary'
+                                        : 'text-secondary border border-card-border hover:text-foreground'
+                                        }`}
+                                >
+                                    <tab.icon className="w-4 h-4" />
+                                    {tab.label}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
                     {tabs.map((tab) => (
                         <button
                             key={tab.id}
                             onClick={() => setActiveTab(tab.id)}
-                            className={`w-full flex items-center gap-3 px-5 py-4 rounded-2xl transition-all duration-300 relative group overflow-hidden ${activeTab === tab.id
+                            className={`hidden lg:flex w-full items-center gap-3 px-5 py-4 rounded-2xl transition-all duration-300 relative group overflow-hidden ${activeTab === tab.id
                                 ? 'glass bg-primary/10 border-primary/30 text-primary'
                                 : 'text-secondary hover:bg-card/40 hover:text-foreground'
                                 }`}
@@ -158,7 +175,7 @@ function SettingsContent() {
                         </button>
                     ))}
 
-                    <div className="pt-8 px-4">
+                    <div className="pt-3 lg:pt-8 px-0 lg:px-4">
                         <Link href="/login" className="w-full flex items-center gap-3 p-4 rounded-2xl text-vulnerable hover:bg-vulnerable/10 transition-all font-black text-xs uppercase tracking-widest border border-vulnerable/20">
                             <LogOut className="w-4 h-4" /> Terminate Session
                         </Link>
@@ -173,7 +190,7 @@ function SettingsContent() {
                             initial={{ opacity: 0, y: 10 }}
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, y: -10 }}
-                            className="glass p-8 rounded-3xl border border-card-border bg-card/5 min-h-[500px]"
+                            className="glass p-4 sm:p-6 md:p-8 rounded-3xl border border-card-border bg-card/5 min-h-[500px]"
                         >
                             {activeTab === 'profile' && (
                                 <div className="space-y-8">
@@ -372,7 +389,7 @@ function SettingsContent() {
                         initial={{ opacity: 0, y: 50, x: '-50%' }}
                         animate={{ opacity: 1, y: 0, x: '-50%' }}
                         exit={{ opacity: 0, y: 20, x: '-50%' }}
-                        className="fixed bottom-10 left-1/2 glass px-8 py-4 rounded-3xl border border-primary/30 shadow-2xl flex items-center gap-4 z-[100]"
+                        className="fixed bottom-6 sm:bottom-10 left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] sm:w-auto glass px-4 sm:px-8 py-3 sm:py-4 rounded-3xl border border-primary/30 shadow-2xl flex items-center justify-center gap-3 sm:gap-4 z-[100]"
                     >
                         <div className="w-2 h-2 rounded-full bg-primary animate-ping"></div>
                         <span className="text-[10px] font-black uppercase tracking-widest">Configuration Synchronized</span>

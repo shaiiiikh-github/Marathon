@@ -111,7 +111,7 @@ export default function HistoryPage() {
                 </div>
             </div>
 
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 relative z-10">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 relative z-10">
                 {[
                     { label: 'Total Archives', value: totalArchives.toString(), icon: Database },
                     { label: 'Neural Protection', value: `${neuralProtection}%`, color: 'safe', icon: ShieldCheck },
@@ -166,22 +166,22 @@ export default function HistoryPage() {
                 </div>
 
                 <div className="overflow-x-auto">
-                    <table className="w-full text-left border-collapse min-w-[900px]">
+                    <table className="w-full text-left border-collapse min-w-[780px] lg:min-w-[900px]">
                         <thead>
                             <tr className="bg-card/40 text-[10px] font-black uppercase tracking-[0.2em] text-secondary border-b border-card-border">
-                                <th className="px-8 py-5">Scan Identifier</th>
-                                <th className="px-8 py-5">Neural Target</th>
-                                <th className="px-8 py-5">Audit Status</th>
-                                <th className="px-8 py-5">Risk Matrix</th>
-                                <th className="px-8 py-5">Score</th>
-                                <th className="px-8 py-5">Timestamp</th>
-                                <th className="px-8 py-5 text-right">Access</th>
+                                <th className="px-4 md:px-8 py-4 md:py-5">Scan Identifier</th>
+                                <th className="px-4 md:px-8 py-4 md:py-5">Neural Target</th>
+                                <th className="px-4 md:px-8 py-4 md:py-5">Audit Status</th>
+                                <th className="px-4 md:px-8 py-4 md:py-5">Risk Matrix</th>
+                                <th className="px-4 md:px-8 py-4 md:py-5">Score</th>
+                                <th className="px-4 md:px-8 py-4 md:py-5">Timestamp</th>
+                                <th className="px-4 md:px-8 py-4 md:py-5 text-right">Access</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-card-border/50">
                             {filteredHistory.length === 0 ? (
                                 <tr>
-                                    <td colSpan={7} className="px-8 py-12 text-center text-secondary font-bold text-sm">
+                                    <td colSpan={7} className="px-4 md:px-8 py-12 text-center text-secondary font-bold text-sm">
                                         No scan archives found.
                                     </td>
                                 </tr>
@@ -193,10 +193,10 @@ export default function HistoryPage() {
                                     transition={{ delay: i * 0.05 }}
                                     className="group hover:bg-primary/5 transition-all duration-300"
                                 >
-                                    <td className="px-8 py-5">
+                                    <td className="px-4 md:px-8 py-4 md:py-5">
                                         <span className="font-mono text-xs text-primary font-black italic tracking-tight">{scan.id}</span>
                                     </td>
-                                    <td className="px-8 py-5">
+                                    <td className="px-4 md:px-8 py-4 md:py-5">
                                         <div className="flex items-center gap-4">
                                             <div className="w-10 h-10 rounded-xl bg-card border border-card-border flex items-center justify-center text-[10px] font-black text-secondary group-hover:text-primary group-hover:border-primary/30 transition-all">
                                                 {scan.language.substring(0, 2).toUpperCase()}
@@ -207,18 +207,18 @@ export default function HistoryPage() {
                                             </div>
                                         </div>
                                     </td>
-                                    <td className="px-8 py-5">
+                                    <td className="px-4 md:px-8 py-4 md:py-5">
                                         <div className="flex items-center gap-2 text-xs text-safe font-black uppercase tracking-widest">
                                             <div className="w-1.5 h-1.5 rounded-full bg-safe shadow-[0_0_8px_rgba(34,197,94,0.4)]"></div>
                                             Logged
                                         </div>
                                     </td>
-                                    <td className="px-8 py-5">
+                                    <td className="px-4 md:px-8 py-4 md:py-5">
                                         <span className={`px-3 py-1 rounded-full text-[10px] font-black border ${getStatusStyles(scan.risk)} tracking-widest uppercase`}>
                                             {scan.risk}
                                         </span>
                                     </td>
-                                    <td className="px-8 py-5">
+                                    <td className="px-4 md:px-8 py-4 md:py-5">
                                         <div className="flex items-center gap-4">
                                             <span className="text-xs font-black">{scan.score}</span>
                                             <div className="w-16 h-1.5 bg-card rounded-full overflow-hidden">
@@ -230,12 +230,12 @@ export default function HistoryPage() {
                                             </div>
                                         </div>
                                     </td>
-                                    <td className="px-8 py-5">
+                                    <td className="px-4 md:px-8 py-4 md:py-5">
                                         <div className="flex items-center gap-2 text-[10px] text-secondary font-bold uppercase tracking-wide whitespace-nowrap">
                                             <Clock className="w-3.5 h-3.5" /> {scan.date}
                                         </div>
                                     </td>
-                                    <td className="px-8 py-5 text-right">
+                                    <td className="px-4 md:px-8 py-4 md:py-5 text-right">
                                         <Link href={`/reports?scanId=${scan.realId}`} className="inline-flex p-3 glass border border-card-border rounded-xl hover:bg-primary hover:border-primary group/btn transition-all shadow-xl active:scale-95">
                                             <ChevronRight className="w-5 h-5 text-secondary group-hover/btn:text-background" />
                                         </Link>

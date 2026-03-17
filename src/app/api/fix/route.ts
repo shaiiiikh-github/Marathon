@@ -18,10 +18,10 @@ export async function POST(req: Request) {
         }
 
         // 2. Fetch the original scan and its vulnerabilities from the database
-        const scanResult = await prisma.scanResult.findUnique({
+        const scanResult = await prisma.scanResult.findFirst({
             where: {
                 id: scanId,
-                userId: session.user.id, // Ensure the user actually owns this scan
+                userId: session.user.id,
             },
             include: {
                 vulnerabilities: true,
@@ -44,7 +44,8 @@ export async function POST(req: Request) {
         };
 
         // 4. Send to the local Flask server (which talks to Ollama)
-        const flaskResponse = await fetch("http://127.0.0.1:7860/fix", {
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:7860";
+        const flaskResponse = await fetch(`${apiUrl}/fix`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(payload),
