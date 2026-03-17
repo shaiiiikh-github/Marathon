@@ -45,11 +45,32 @@ export default function Dashboard() {
 
     const handleGeneratePDF = async () => {
         setIsGenerating(true);
-        // Placeholder for future PDF generation API
-        setTimeout(() => {
+        try {
+            const res = await fetch('/api/history/export');
+            if (!res.ok) {
+                throw new Error('Failed to generate report');
+            }
+
+            const blob = await res.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+
+            const contentDisposition = res.headers.get('Content-Disposition');
+            const fileNameMatch = contentDisposition?.match(/filename=([^;]+)/i);
+            const fileName = fileNameMatch?.[1]?.replace(/"/g, '') || `codetrust-forensic-report-${Date.now()}.csv`;
+
+            a.download = fileName;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            window.URL.revokeObjectURL(url);
+        } catch (error) {
+            console.error('REPORT_EXPORT_ERROR', error);
+            alert('Unable to download report right now. Please try again.');
+        } finally {
             setIsGenerating(false);
-            alert("Forensic report generation will be connected to the backend soon.");
-        }, 2000);
+        }
     };
 
     // Calculate Dynamic Stats
@@ -113,14 +134,14 @@ export default function Dashboard() {
                     </p>
                 </div>
 
-                <div className="flex gap-3">
-                    <Link href="/analyze" className="px-6 py-3 bg-primary text-background rounded-xl text-xs font-black uppercase tracking-widest hover:bg-primary/90 transition-all shadow-[0_0_20px_rgba(255,255,255,0.3)] active:scale-95 flex items-center gap-2">
+                <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
+                    <Link href="/analyze" className="px-5 sm:px-6 py-3 bg-primary text-background rounded-xl text-xs font-black uppercase tracking-widest hover:bg-primary/90 transition-all shadow-[0_0_20px_rgba(255,255,255,0.3)] active:scale-95 flex items-center justify-center gap-2">
                         <Terminal className="w-4 h-4" /> New Audit
                     </Link>
                     <button 
                         onClick={handleGeneratePDF}
                         disabled={isGenerating}
-                        className="px-6 py-3 glass border border-card-border rounded-xl text-xs font-black uppercase tracking-widest hover:bg-card hover:border-primary/30 transition-all active:scale-95 flex items-center gap-2 disabled:opacity-50"
+                        className="px-5 sm:px-6 py-3 glass border border-card-border rounded-xl text-xs font-black uppercase tracking-widest hover:bg-card hover:border-primary/30 transition-all active:scale-95 flex items-center justify-center gap-2 disabled:opacity-50"
                     >
                         {isGenerating ? <Activity className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
                         Report
@@ -162,7 +183,7 @@ export default function Dashboard() {
                 </div>
                 
                 <div className="overflow-x-auto">
-                    <table className="w-full text-left border-collapse">
+                    <table className="w-full min-w-[620px] text-left border-collapse">
                         <thead>
                             <tr className="bg-card/20 text-[10px] font-black uppercase tracking-widest text-secondary border-b border-card-border">
                                 <th className="px-6 py-4">ID</th>

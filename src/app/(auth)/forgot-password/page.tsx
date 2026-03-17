@@ -32,7 +32,7 @@ export default function ForgotPasswordPage() {
                 <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-purple-500/10 blur-[100px] rounded-full animate-float" style={{ animationDelay: '2s' }}></div>
             </div>
 
-            <div className="glass p-8 rounded-3xl border border-card-border shadow-2xl space-y-8 max-w-md w-full relative z-10">
+            <div className="glass p-5 sm:p-8 rounded-3xl border border-card-border shadow-2xl space-y-8 max-w-md w-full relative z-10">
                 {!isSubmitted ? (
                     <>
                         <div className="text-center space-y-2">
