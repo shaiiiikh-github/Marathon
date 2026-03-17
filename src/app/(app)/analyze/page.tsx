@@ -59,16 +59,24 @@ export default function AnalyzePage() {
         setScanResults([]);
 
         try {
-            const apiUrl = process.env.NEXT_PUBLIC_API_URL || "https://shaiiiikh1305-backend.hf.space";
-            const res = await fetch(`${apiUrl}/scan`, {
+            // Hitting your Next.js backend so it saves to Prisma!
+            const res = await fetch(`/api/scan`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ code })
             });
             const data = await res.json();
 
-            if (data.scan_results) {
-                setScanResults(data.scan_results);
+            if (data.vulnerabilities) {
+                // Map the Prisma database format back to what your UI expects
+                const formattedResults = data.vulnerabilities.map((v: any) => ({
+                    line_number: v.lineNumber,
+                    code: v.codeSnippet,
+                    label: v.label,
+                    label_name: v.labelName,
+                    confidence: v.confidence
+                }));
+                setScanResults(formattedResults);
             }
         } catch (error) {
             console.error("Scan failed:", error);
@@ -179,7 +187,6 @@ export default function AnalyzePage() {
                         value={code}
                         onChange={(e) => setCode(e.target.value)}
                         spellCheck={false}
-                        // FIX: pl-[4.5rem] precisely matches the padding + the w-12 line number width!
                         className="absolute inset-0 w-full h-full py-6 pr-6 pl-[4.5rem] bg-transparent text-transparent caret-white font-mono text-sm leading-relaxed resize-none focus:outline-none z-10"
                     />
                     <pre className="absolute inset-0 py-6 pr-6 pl-6 font-mono text-sm leading-relaxed pointer-events-none overflow-auto">
@@ -199,7 +206,6 @@ export default function AnalyzePage() {
                                     <div key={i} className={`flex w-full ${highlightClass}`}>
                                         <span className="text-gray-600 w-12 flex-shrink-0 text-right pr-4 select-none italic">{lineNum}</span>
                                         <span className="text-gray-400 whitespace-pre">
-                                            {/* FIX: Regex matches words AND spaces perfectly, preserving exact cursor widths */}
                                             {line.match(/(\s+|\S+)/g)?.map((word, j) => {
                                                 const isKeyword = ['import', 'from', 'def', 'async', 'return', 'class', 'try', 'except'].includes(word.trim());
                                                 const isFunction = word.includes('(');

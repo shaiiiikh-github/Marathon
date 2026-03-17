@@ -1,18 +1,22 @@
+// src/app/(app)/history/page.tsx
 'use client';
 
-import { useState } from 'react';
-import { Search, Filter, ArrowUpDown, ChevronRight, CheckCircle2, Clock, Download, FileText, Database, ShieldCheck, AlertCircle } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Search, Filter, ChevronRight, Clock, Download, FileText, Database, ShieldCheck, AlertCircle, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 
-const INITIAL_HISTORY = [
-    { id: 'SCN-8291', project: 'Auth-Microservice-v2', branch: 'main', status: 'Completed', risk: 'LOW', score: '1.2', date: '2024-05-15 14:30', language: 'Python' },
-    { id: 'SCN-8290', project: 'Legacy-API-Gateway', branch: 'hotfix/security', status: 'Completed', risk: 'CRITICAL', score: '9.4', date: '2024-05-15 12:15', language: 'JavaScript' },
-    { id: 'SCN-8289', project: 'Payment-Processor-JS', branch: 'production', status: 'Completed', risk: 'HIGH', score: '7.8', date: '2024-05-14 18:45', language: 'TypeScript' },
-    { id: 'SCN-8288', project: 'Customer-Portal-App', branch: 'staging', status: 'Completed', risk: 'MEDIUM', score: '5.2', date: '2024-05-14 10:20', language: 'React' },
-    { id: 'SCN-8287', project: 'Data-Sync-Util', branch: 'main', status: 'Completed', risk: 'SAFE', score: '0.4', date: '2024-05-13 16:10', language: 'Go' },
-    { id: 'SCN-8286', project: 'Internal-Admin-Panel', branch: 'feat/audit', status: 'Completed', risk: 'HALLUCINATED', score: '6.5', date: '2024-05-13 09:05', language: 'Python' },
-];
+interface ScanHistoryItem {
+    id: string;
+    realId: string;
+    project: string;
+    branch: string;
+    status: string;
+    risk: string;
+    score: string;
+    date: string;
+    language: string;
+}
 
 const getStatusStyles = (risk: string) => {
     switch (risk) {
@@ -27,9 +31,28 @@ const getStatusStyles = (risk: string) => {
 };
 
 export default function HistoryPage() {
-    const [history, setHistory] = useState(INITIAL_HISTORY);
+    const [history, setHistory] = useState<ScanHistoryItem[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [isExporting, setIsExporting] = useState(false);
+
+    useEffect(() => {
+        const fetchHistory = async () => {
+            try {
+                const res = await fetch('/api/history');
+                if (res.ok) {
+                    const data = await res.json();
+                    setHistory(data);
+                }
+            } catch (error) {
+                console.error("Failed to fetch history:", error);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        fetchHistory();
+    }, []);
 
     const filteredHistory = history.filter(item =>
         item.project.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -44,14 +67,30 @@ export default function HistoryPage() {
         }, 1500);
     };
 
+    // Calculate dynamic stats
+    const totalArchives = history.length;
+    const safeScans = history.filter(h => h.risk === 'SAFE').length;
+    const neuralProtection = totalArchives > 0 ? Math.round((safeScans / totalArchives) * 100) : 0;
+    const activeAlerts = history.filter(h => h.risk === 'CRITICAL' || h.risk === 'HIGH' || h.risk === 'HALLUCINATED').length;
+    const avgScore = totalArchives > 0 
+        ? (history.reduce((acc, curr) => acc + parseFloat(curr.score), 0) / totalArchives).toFixed(1) 
+        : '0.0';
+
+    if (isLoading) {
+        return (
+            <div className="min-h-screen flex flex-col items-center justify-center text-primary gap-4">
+                <Loader2 className="w-8 h-8 animate-spin" />
+                <p className="font-bold tracking-widest uppercase text-xs">Syncing Archives...</p>
+            </div>
+        );
+    }
+
     return (
         <div className="p-4 md:p-8 space-y-8 max-w-7xl mx-auto relative min-h-screen">
-            {/* 3D Background Elements */}
             <div className="absolute inset-0 pointer-events-none -z-10 overflow-hidden opacity-30">
                 <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-primary/5 blur-[120px] rounded-full animate-drift"></div>
             </div>
 
-            {/* Header */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
                 <div>
                     <h1 className="text-3xl md:text-4xl font-black italic mb-3">Audit <span className="gradient-text">Log</span></h1>
@@ -72,13 +111,12 @@ export default function HistoryPage() {
                 </div>
             </div>
 
-            {/* Stats Bar */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 relative z-10">
                 {[
-                    { label: 'Total Archives', value: '1,248', icon: Database },
-                    { label: 'Neural Protection', value: '84%', color: 'safe', icon: ShieldCheck },
-                    { label: 'Average Risk', value: '2.4', icon: FileText },
-                    { label: 'Active Alerts', value: '12', color: 'vulnerable', icon: AlertCircle },
+                    { label: 'Total Archives', value: totalArchives.toString(), icon: Database },
+                    { label: 'Neural Protection', value: `${neuralProtection}%`, color: 'safe', icon: ShieldCheck },
+                    { label: 'Average Risk', value: avgScore, icon: FileText },
+                    { label: 'Active Alerts', value: activeAlerts.toString(), color: 'vulnerable', icon: AlertCircle },
                 ].map((stat, i) => (
                     <motion.div
                         key={i}
@@ -102,7 +140,6 @@ export default function HistoryPage() {
                 ))}
             </div>
 
-            {/* Table Container */}
             <div className="glass rounded-3xl border border-card-border overflow-hidden relative z-10 shadow-2xl shadow-primary/5">
                 <div className="p-5 border-b border-card-border bg-card/20 flex flex-col sm:flex-row gap-4 items-center justify-between">
                     <div className="relative flex-1 max-w-sm w-full group">
@@ -142,9 +179,15 @@ export default function HistoryPage() {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-card-border/50">
-                            {filteredHistory.map((scan, i) => (
+                            {filteredHistory.length === 0 ? (
+                                <tr>
+                                    <td colSpan={7} className="px-8 py-12 text-center text-secondary font-bold text-sm">
+                                        No scan archives found.
+                                    </td>
+                                </tr>
+                            ) : filteredHistory.map((scan, i) => (
                                 <motion.tr
-                                    key={scan.id}
+                                    key={scan.realId}
                                     initial={{ opacity: 0, x: -10 }}
                                     animate={{ opacity: 1, x: 0 }}
                                     transition={{ delay: i * 0.05 }}
@@ -182,7 +225,7 @@ export default function HistoryPage() {
                                                 <motion.div
                                                     initial={{ width: 0 }}
                                                     animate={{ width: `${Math.min(parseFloat(scan.score) * 10, 100)}%` }}
-                                                    className={`h-full ${parseFloat(scan.score) > 7 ? 'bg-vulnerable' : parseFloat(scan.score) > 4 ? 'bg-hallucinated' : 'bg-safe'}`}
+                                                    className={`h-full ${parseFloat(scan.score) > 7 ? 'bg-safe' : parseFloat(scan.score) > 4 ? 'bg-hallucinated' : 'bg-vulnerable'}`}
                                                 />
                                             </div>
                                         </div>
@@ -193,7 +236,7 @@ export default function HistoryPage() {
                                         </div>
                                     </td>
                                     <td className="px-8 py-5 text-right">
-                                        <Link href="/reports" className="inline-flex p-3 glass border border-card-border rounded-xl hover:bg-primary hover:border-primary group/btn transition-all shadow-xl active:scale-95">
+                                        <Link href={`/reports?scanId=${scan.realId}`} className="inline-flex p-3 glass border border-card-border rounded-xl hover:bg-primary hover:border-primary group/btn transition-all shadow-xl active:scale-95">
                                             <ChevronRight className="w-5 h-5 text-secondary group-hover/btn:text-background" />
                                         </Link>
                                     </td>
