@@ -1,9 +1,9 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { Suspense, useCallback, useEffect, useState } from 'react';
 import { AlertCircle, CheckCircle2, ShieldCheck, Zap, ArrowRight, Bug, Info, ChevronDown, ChevronUp, Loader2, Share2, Trash2, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 
 interface Finding {
     id: string;
@@ -17,6 +17,9 @@ interface Finding {
     unsafeCode: string;
     safeCode: string;
     aiRationale: string;
+    label?: number;
+    labelName?: string;
+    confidence?: number;
 }
 
 interface ReportResponse {
@@ -25,12 +28,14 @@ interface ReportResponse {
         displayId: string;
         createdAt: string;
         fixedCode?: string | null;
+        originalCode?: string;
     };
     findings: Finding[];
 }
 
-export default function ReportsPage() {
+function ReportsPageContent() {
     const searchParams = useSearchParams();
+    const router = useRouter();
     const scanId = searchParams.get('scanId');
 
     const [findings, setFindings] = useState<Finding[]>([]);
@@ -40,16 +45,18 @@ export default function ReportsPage() {
     const [showToast, setShowToast] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [reportDisplayId, setReportDisplayId] = useState('N/A');
+    const [resolvedScanId, setResolvedScanId] = useState<string | null>(scanId);
+    const [sourceCode, setSourceCode] = useState('');
 
-    const loadReport = async () => {
-        if (!scanId) {
+    const loadReport = useCallback(async (targetScanId: string | null) => {
+        if (!targetScanId) {
             setIsLoading(false);
             return;
         }
 
         try {
             setIsLoading(true);
-            const res = await fetch(`/api/reports/${scanId}`);
+            const res = await fetch(`/api/reports/${targetScanId}`);
             if (!res.ok) {
                 throw new Error('Failed to load report');
             }
@@ -58,6 +65,7 @@ export default function ReportsPage() {
             setFindings(data.findings);
             setExpandedId(data.findings[0]?.id ?? null);
             setReportDisplayId(data.scan.displayId);
+            setSourceCode(data.scan.originalCode ?? '');
 
             if (data.scan.fixedCode) {
                 setFixedIds(data.findings.map((f) => f.id));
@@ -70,11 +78,46 @@ export default function ReportsPage() {
         } finally {
             setIsLoading(false);
         }
-    };
+    }, []);
 
     useEffect(() => {
-        loadReport();
+        setResolvedScanId(scanId);
     }, [scanId]);
+
+    useEffect(() => {
+        const loadLatestScanId = async () => {
+            if (scanId) {
+                return;
+            }
+
+            try {
+                setIsLoading(true);
+                const res = await fetch('/api/history');
+                if (!res.ok) {
+                    throw new Error('Failed to load history');
+                }
+
+                const data: Array<{ realId: string }> = await res.json();
+                const latestScanId = data[0]?.realId;
+                if (!latestScanId) {
+                    setIsLoading(false);
+                    return;
+                }
+
+                setResolvedScanId(latestScanId);
+                router.replace(`/reports?scanId=${latestScanId}`);
+            } catch (error) {
+                console.error('REPORT_LATEST_SCAN_RESOLVE_ERROR', error);
+                setIsLoading(false);
+            }
+        };
+
+        loadLatestScanId();
+    }, [scanId, router]);
+
+    useEffect(() => {
+        loadReport(resolvedScanId);
+    }, [resolvedScanId, loadReport]);
 
     const getSeverityStyles = (severity: string) => {
         switch (severity) {
@@ -91,7 +134,7 @@ export default function ReportsPage() {
     };
 
     const handleApplyFix = async (id: string) => {
-        if (!scanId) {
+        if (!resolvedScanId) {
             triggerToast('Open a scan report from Dashboard or History first');
             return;
         }
@@ -101,14 +144,24 @@ export default function ReportsPage() {
             const res = await fetch('/api/fix', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ scanId }),
+                body: JSON.stringify({
+                    scanId: resolvedScanId,
+                    code: sourceCode,
+                    scan_results: findings.map((f) => ({
+                        line_number: f.line,
+                        code: f.unsafeCode,
+                        label: f.label ?? (f.severity === 'CRITICAL' ? 0 : 2),
+                        label_name: f.labelName ?? f.severity,
+                        confidence: f.confidence ?? 0.9,
+                    })),
+                }),
             });
 
             if (!res.ok) {
                 throw new Error('Patch generation failed');
             }
 
-            await loadReport();
+            await loadReport(resolvedScanId);
             setFixedIds((prev) => (prev.includes(id) ? prev : [...prev, id]));
             triggerToast(`Secured successfully: ${id}`);
         } catch (error) {
@@ -206,7 +259,7 @@ export default function ReportsPage() {
                 </div>
 
                 <AnimatePresence>
-                    {!scanId && (
+                    {!resolvedScanId && (
                         <motion.div
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
@@ -295,7 +348,7 @@ export default function ReportsPage() {
                                                         <Info className="w-4 h-4 text-primary" /> Forensic Context
                                                     </h4>
                                                     <p className="text-sm md:text-base leading-relaxed text-secondary border-l-2 border-primary/20 pl-6 italic">
-                                                        "{finding.description}"
+                                                        &quot;{finding.description}&quot;
                                                     </p>
                                                 </div>
                                                 <div className="glass p-4 rounded-xl border border-card-border space-y-3">
@@ -407,5 +460,19 @@ export default function ReportsPage() {
                 )}
             </AnimatePresence>
         </div>
+    );
+}
+
+export default function ReportsPage() {
+    return (
+        <Suspense
+            fallback={
+                <div className="p-8 text-center text-secondary">
+                    Loading report...
+                </div>
+            }
+        >
+            <ReportsPageContent />
+        </Suspense>
     );
 }

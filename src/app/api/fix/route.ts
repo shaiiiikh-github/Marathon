@@ -10,9 +10,53 @@ export async function POST(req: Request) {
         }
 
         const body = await req.json();
-        const { code, scan_results, scanId } = body;
+        const parsedBody = body as {
+            code?: string;
+            scan_results?: Array<{
+                line_number: number;
+                code: string;
+                label: number;
+                label_name: string;
+                confidence: number;
+            }>;
+            scanId?: string;
+            scanID?: string;
+            id?: string;
+        };
 
-        if (!code || !scan_results || !scanId) {
+        const scanId = parsedBody.scanId ?? parsedBody.scanID ?? parsedBody.id;
+        const rawCode = parsedBody.code;
+        const rawScanResults = parsedBody.scan_results;
+
+        if (!scanId) {
+            return new NextResponse("Missing scanId", { status: 400 });
+        }
+
+        let code = rawCode;
+        let scanResults = rawScanResults;
+
+        // Reports page sends only scanId; resolve source code and scan results from DB.
+        if (!code || !scanResults) {
+            const existingScan = await prisma.scanResult.findFirst({
+                where: { id: scanId, userId: session.user.id },
+                include: { vulnerabilities: true },
+            });
+
+            if (!existingScan) {
+                return new NextResponse("Scan not found", { status: 404 });
+            }
+
+            code = existingScan.originalCode;
+            scanResults = existingScan.vulnerabilities.map((v) => ({
+                line_number: v.lineNumber,
+                code: v.codeSnippet,
+                label: v.label,
+                label_name: v.labelName,
+                confidence: v.confidence,
+            }));
+        }
+
+        if (!code || !scanResults) {
             return new NextResponse("Missing required fields", { status: 400 });
         }
 
@@ -23,7 +67,7 @@ export async function POST(req: Request) {
         const flaskResponse = await fetch(`${apiUrl}/fix`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ code, scan_results }),
+            body: JSON.stringify({ code, scan_results: scanResults }),
         });
 
         if (!flaskResponse.ok) {
@@ -35,8 +79,8 @@ export async function POST(req: Request) {
 
         // 3. Save the fixed code back to the Prisma database
         if (fixedCode) {
-            await prisma.scanResult.update({
-                where: { id: scanId },
+            await prisma.scanResult.updateMany({
+                where: { id: scanId, userId: session.user.id },
                 data: { fixedCode: fixedCode },
             });
         }
