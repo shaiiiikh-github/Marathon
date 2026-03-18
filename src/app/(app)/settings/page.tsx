@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, Suspense } from 'react';
-import { User, Bell, Shield, Key, Globe, LogOut, Check, Save, Zap, Activity, Cpu, Database, Network as NetworkIcon, Sparkles } from 'lucide-react';
+import { User, Bell, Shield, Key, Globe, LogOut, Check, Save, Zap, Activity, Network as NetworkIcon, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
@@ -35,6 +35,17 @@ function SettingsContent() {
     const [saving, setSaving] = useState(false);
     const [saved, setSaved] = useState(false);
 
+    // --- API KEYS STATE (Moved inside the component!) ---
+    interface ApiKeyItem {
+        id: string;
+        name: string;
+        key: string;
+        createdAt: string;
+    }
+
+    const [apiKeys, setApiKeys] = useState<ApiKeyItem[]>([]);
+    const [isCreatingKey, setIsCreatingKey] = useState(false);
+
     // 1. Pull in the session and the update function
     const { data: session, update } = useSession();
 
@@ -48,8 +59,6 @@ function SettingsContent() {
         if (session?.user) {
             setName(session.user.name || "");
             setEmail(session.user.email || "");
-            // If you add bio to the session callback later, you can pull it here:
-            // setBio(session.user.bio || "");
         }
     }, [session]);
 
@@ -63,7 +72,38 @@ function SettingsContent() {
         }
     }, [tabParam]);
 
-    // 4. The real save function hitting your new API route
+    // Fetch API Keys when tab is active
+    useEffect(() => {
+        if (activeTab === 'api') {
+            fetch('/api/keys')
+                .then(res => res.json())
+                .then(data => setApiKeys(data))
+                .catch(err => console.error(err));
+        }
+    }, [activeTab]);
+
+    // Handle Creating a new API Key
+    const handleCreateKey = async () => {
+        setIsCreatingKey(true);
+        try {
+            const res = await fetch('/api/keys', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name: `CodeTrust Interface ${apiKeys.length + 1}` })
+            });
+            
+            if (res.ok) {
+                const newKey = await res.json();
+                setApiKeys([newKey, ...apiKeys]); // Update UI instantly
+            }
+        } catch (error) {
+            console.error("Failed to create key", error);
+        } finally {
+            setIsCreatingKey(false);
+        }
+    };
+
+    // 4. The real save function hitting your profile API route
     const handleSave = async () => {
         setSaving(true);
         try {
@@ -74,9 +114,7 @@ function SettingsContent() {
             });
 
             if (res.ok) {
-                // Instantly update the UI without refreshing the page
                 await update({ name, email });
-
                 setSaved(true);
                 setTimeout(() => setSaved(false), 3000);
             } else {
@@ -274,27 +312,41 @@ function SettingsContent() {
                                 <div className="space-y-8">
                                     <div className="flex items-center justify-between border-b border-card-border pb-6">
                                         <h3 className="text-xl font-black italic">Neural Interface Keys</h3>
-                                        <button className="px-6 py-2.5 bg-primary text-white rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2">
-                                            <Zap className="w-4 h-4" /> Create Key
+                                        <button 
+                                            onClick={handleCreateKey}
+                                            disabled={isCreatingKey}
+                                            className="px-6 py-2.5 bg-primary text-white rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 hover:bg-blue-600 transition-all active:scale-95 disabled:opacity-50"
+                                        >
+                                            {isCreatingKey ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> : <Zap className="w-4 h-4" />}
+                                            {isCreatingKey ? 'Generating...' : 'Create Key'}
                                         </button>
                                     </div>
 
                                     <div className="space-y-4">
-                                        {[
-                                            { name: 'Prod-API-Scanner', key: 'pk_live_************************8s92', created: '12 May 2024' },
-                                            { name: 'GitHub-Action-CI', key: 'pk_live_************************2f01', created: '02 May 2024' },
-                                        ].map((key, i) => (
-                                            <div key={i} className="p-6 glass rounded-2xl border border-card-border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 hover:border-primary/20 transition-all">
-                                                <div className="space-y-1">
-                                                    <p className="font-black italic text-sm">{key.name}</p>
-                                                    <p className="text-xs font-mono text-secondary">{key.key}</p>
-                                                </div>
-                                                <div className="text-right">
-                                                    <p className="text-[10px] text-secondary font-black uppercase opacity-50 mb-1">Created</p>
-                                                    <p className="text-xs font-bold whitespace-nowrap">{key.created}</p>
-                                                </div>
+                                        {apiKeys.length === 0 ? (
+                                            <div className="text-center p-8 text-secondary font-medium text-sm border border-dashed border-card-border rounded-2xl">
+                                                No interface keys generated yet. Create one to authenticate external neural scans.
                                             </div>
-                                        ))}
+                                        ) : (
+                                            apiKeys.map((key) => (
+                                                <div key={key.id} className="p-6 glass rounded-2xl border border-card-border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 hover:border-primary/20 transition-all group">
+                                                    <div className="space-y-1">
+                                                        <p className="font-black italic text-sm">{key.name}</p>
+                                                        <div className="flex items-center gap-3">
+                                                            <p className="text-xs font-mono text-secondary bg-background/50 px-3 py-1 rounded-md">
+                                                                {key.key.substring(0, 12)}************************
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                    <div className="text-right">
+                                                        <p className="text-[10px] text-secondary font-black uppercase opacity-50 mb-1">Created</p>
+                                                        <p className="text-xs font-bold whitespace-nowrap">
+                                                            {new Date(key.createdAt).toLocaleDateString()}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            ))
+                                        )}
                                     </div>
                                 </div>
                             )}

@@ -3,13 +3,13 @@
 import { useState } from 'react';
 import { useSession, signOut } from "next-auth/react";
 import {
-  Search, Bell, User, Menu, Settings,
-  LogOut, Shield, ChevronDown, Sparkles,
-  Download, Chrome
+  Search, User, Menu, Settings,
+  LogOut, ChevronDown
 } from 'lucide-react';
 import ThemeToggle from './ThemeToggle';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
+import Image from 'next/image';
 
 interface NavbarProps {
   onMenuClick: () => void;
@@ -19,9 +19,7 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
 
   const { data: session } = useSession();
 
-  const [showNotifications, setShowNotifications] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
-  const [showDownload, setShowDownload] = useState(false);
 
   const handleLogout = async () => {
     await signOut({ callbackUrl: "/login" });
@@ -65,8 +63,11 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
             >
               <div className="w-8 h-8 rounded-full bg-linear-to-br from-blue-500 to-purple-600 flex items-center justify-center">
                 {session?.user?.image ? (
-                  <img
+                  <Image
                     src={session.user.image}
+                    alt={session?.user?.name ? `${session.user.name} avatar` : 'User avatar'}
+                    width={32}
+                    height={32}
                     className="w-full h-full rounded-full"
                   />
                 ) : (
@@ -99,7 +100,7 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
                     <p className="text-[10px] text-secondary uppercase">
                       Signed in as
                     </p>
-                    <p className="text-xs font-bold truncate">
+                    <p className="text-xs font-bold break-all">
                       {session?.user?.email}
                     </p>
                   </div>
