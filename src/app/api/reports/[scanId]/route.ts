@@ -68,7 +68,6 @@ export async function GET(
         displayId: `SCN-${scan.id.substring(scan.id.length - 4).toUpperCase()}`,
         createdAt,
         fixedCode: scan.fixedCode,
-        originalCode: scan.originalCode,
       },
       findings,
     });
