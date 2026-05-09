@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import Sidebar from '@/components/Sidebar';
 import Navbar from '@/components/Navbar';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -13,16 +13,18 @@ export default function AppLayout({
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
 
-  const [particles, setParticles] = useState<
-    {
-      x: string;
-      y: string;
-      scale: number;
-      opacity: number;
-      duration: number;
-      drift: string;
-    }[]
-  >([]);
+  const particles = useMemo(
+    () =>
+      Array.from({ length: 20 }, (_, i) => ({
+        x: `${(i * 37 + 11) % 100}%`,
+        y: `${(i * 53 + 23) % 100}%`,
+        scale: 0.55 + ((i * 17) % 45) / 100,
+        opacity: 0.12 + ((i * 19) % 22) / 100,
+        duration: 22 + (i % 9) * 2,
+        drift: `${((i * 7) % 11) - 5}%`,
+      })),
+    []
+  );
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
@@ -31,19 +33,6 @@ export default function AppLayout({
 
     window.addEventListener('mousemove', handleMouseMove);
     return () => window.removeEventListener('mousemove', handleMouseMove);
-  }, []);
-
-  useEffect(() => {
-    const generated = Array.from({ length: 20 }).map(() => ({
-      x: Math.random() * 100 + '%',
-      y: Math.random() * 100 + '%',
-      scale: Math.random() * 0.5 + 0.5,
-      opacity: Math.random() * 0.3 + 0.1,
-      duration: Math.random() * 20 + 20,
-      drift: (Math.random() - 0.5) * 10 + '%',
-    }));
-
-    setParticles(generated);
   }, []);
 
   return (

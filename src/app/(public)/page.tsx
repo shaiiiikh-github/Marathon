@@ -1,6 +1,6 @@
 'use client';
 
-import { Shield, Zap, Lock, Code, Cpu, Globe, ArrowRight, ChevronRight, PlayCircle, Chrome, Menu, X } from 'lucide-react';
+import { Shield, Zap, Lock, Code, Cpu, Globe, ArrowRight, PlayCircle, Chrome, Menu, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import { useState } from 'react';

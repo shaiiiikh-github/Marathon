@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from 'react';
 import { Search, Filter, ChevronRight, Clock, Download, FileText, Database, ShieldCheck, AlertCircle, Loader2 } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import Link from 'next/link';
 
 interface ScanHistoryItem {
@@ -54,17 +54,54 @@ export default function HistoryPage() {
         fetchHistory();
     }, []);
 
-    const filteredHistory = history.filter(item =>
-        item.project.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.id.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    const normalizedSearch = searchTerm.trim().toLowerCase();
 
-    const handleExport = () => {
+    const filteredHistory = history.filter((item) => {
+        if (!normalizedSearch) {
+            return true;
+        }
+
+        return [
+            item.project,
+            item.id,
+            item.realId,
+            item.branch,
+            item.status,
+            item.risk,
+            item.score,
+            item.date,
+            item.language,
+        ].some((value) => value.toLowerCase().includes(normalizedSearch));
+    });
+
+    const handleExport = async () => {
         setIsExporting(true);
-        setTimeout(() => {
+        try {
+            const res = await fetch('/api/history/export');
+            if (!res.ok) {
+                throw new Error('Failed to generate report');
+            }
+
+            const blob = await res.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+
+            const contentDisposition = res.headers.get('Content-Disposition');
+            const fileNameMatch = contentDisposition?.match(/filename=([^;]+)/i);
+            const fileName = fileNameMatch?.[1]?.replace(/"/g, '') || `codetrust-forensic-report-${Date.now()}.pdf`;
+
+            a.download = fileName;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            window.URL.revokeObjectURL(url);
+        } catch (error) {
+            console.error('HISTORY_EXPORT_ERROR', error);
+            alert('Unable to download report right now. Please try again.');
+        } finally {
             setIsExporting(false);
-            alert('Forensic log exported as CSV');
-        }, 1500);
+        }
     };
 
     // Calculate dynamic stats
@@ -148,7 +185,7 @@ export default function HistoryPage() {
                             type="text"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            placeholder="Filter by Repository or ID..."
+                            placeholder="Search by ID, risk, date, branch, language..."
                             className="w-full pl-12 pr-4 py-3 bg-background/50 border border-card-border rounded-xl text-sm font-bold focus:outline-none focus:border-primary/50 focus:bg-background transition-all"
                         />
                     </div>
@@ -231,7 +268,7 @@ export default function HistoryPage() {
                                         </div>
                                     </td>
                                     <td className="px-4 md:px-8 py-4 md:py-5">
-                                        <div className="flex items-center gap-2 text-[10px] text-secondary font-bold uppercase tracking-wide whitespace-nowrap">
+                                        <div className="flex items-center gap-2 text-[10px] text-secondary font-bold uppercase tracking-wide">
                                             <Clock className="w-3.5 h-3.5" /> {scan.date}
                                         </div>
                                     </td>
